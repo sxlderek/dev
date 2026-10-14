@@ -1,0 +1,83 @@
+name: rustdesk-win2025
+
+on:
+  workflow_dispatch:
+
+jobs:
+  secure-rdp:
+    runs-on: windows-2025
+    timeout-minutes: 360
+
+    steps:
+      - name: Install RustDesk via Chocolatey
+        shell: pwsh
+        run: |
+          choco install rustdesk -y --no-progress
+          # Ensure the installation path is added to the session
+          $env:Path += ";$env:ProgramFiles\RustDesk"
+          & "rustdesk.exe" --install-service
+
+      - name: Configure RustDesk
+        shell: pwsh
+        run: |
+          $password = "${{ secrets.RUSTDESK_PASSWORD }}"
+          # Wait for service to be fully registered and running
+          while (-not (Get-Service "RustDesk" -ErrorAction SilentlyContinue)) {
+            Write-Host "Waiting for RustDesk service..."
+            Start-Sleep -Seconds 2
+          }
+          & "$env:ProgramFiles\RustDesk\rustdesk.exe" --password $password
+          & "$env:ProgramFiles\RustDesk\rustdesk.exe" --option allow-remote-config-modification Y
+
+      - name: Set Display Resolution
+        shell: pwsh
+        run: |
+          # Use a more reliable method for headless runners
+          Set-DisplayResolution -Width 1920 -Height 1080 -Force || Write-Warning "Resolution change failed, but continuing..."
+
+      - name: Get ID and Notify
+        id: rustdesk-info
+        shell: pwsh
+        env:
+          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          RUSTDESK_PASSWORD: ${{ secrets.RUSTDESK_PASSWORD }}
+        run: |
+          $id = & "$env:ProgramFiles\RustDesk\rustdesk.exe" --get-id
+          $id = $id.Trim()
+          echo "id=$id" >> $env:GITHUB_OUTPUT
+          
+          Write-Host "---------------------------"
+          Write-Host "RustDesk ID: $id"
+          Write-Host "---------------------------"
+
+          if ($env:EMAIL_USERNAME -and $env:EMAIL_PASSWORD) {
+            # Replacement for deprecated Send-MailMessage using .NET Classes
+            $msg = New-Object System.Net.Mail.MailMessage($env:EMAIL_USERNAME, $env:EMAIL_TO)
+            $msg.Subject = "RustdeskVM Ready - ID: $id"
+            $msg.Body = "ID: $id `nPassword: $env:RUSTDESK_PASSWORD `nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            
+            $smtp = New-Object System.Net.Mail.SmtpClient("smtp.gmail.com", 587)
+            $smtp.EnableSsl = $true
+            $smtp.Credentials = New-Object System.Net.NetworkCredential($env:EMAIL_USERNAME, $env:EMAIL_PASSWORD)
+            
+            try {
+                $smtp.Send($msg)
+                Write-Host "Notification sent via .NET SMTP"
+            } finally {
+                $msg.Dispose()
+                $smtp.Dispose()
+            }
+          }
+
+      - name: Keep Alive
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "VM is now accessible. Use RustDesk ID: ${{ steps.rustdesk-info.outputs.id }}"
+          # Infinite loop to prevent the job from finishing
+          while ($true) {
+            Write-Host "Active: $(Get-Date -Format 'HH:mm:ss')"
+            Start-Sleep -Seconds 60
+          }
