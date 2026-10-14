@@ -1,57 +1,64 @@
 ---
 name: stripchat-payout
-description: Extract Stripchat token history into a clean Google Sheet or TSV table.
+description: Use when parsing Stripchat token history into payouts.
 version: 1.0.0
 license: MIT
 platforms: [linux, macos, windows]
 ---
 
-# stripchat-payout
+# Stripchat Payout Token-History Breakdown
 
-Extracts the `USERS` and `TOKENS` columns from the Stripchat token history page (`stripchat.com/earnings/tokens-history`) via a browser session (e.g. Chrome via Playwriter), strips whitespace and commas from token counts, and outputs either directly to a new Google Sheet or as clean TSV.
+Turn a Stripchat **studio admin "Tokens History for Last 30 Days"** table (screenshot or
+pasted text) into grouped payout sections, each rendered as clean TSV.
 
-## Prerequisites
+## When To Use
 
-- **Google Chrome** with an active Stripchat model/studio login session.
-- **Playwriter CLI** (`npm install -g playwriter@latest` or `npx playwriter@latest`) with the Chrome extension enabled, or equivalent browser automation.
-- For Google Sheets export: Chrome logged into Google with access to create spreadsheets (`sheets.new`).
+- User pastes/shares a Stripchat Tokens History table (a payout row + "Transfer to studio"
+  rows) and wants it organized per payout.
+- User asks to break the table into sections by payout, or aggregate per user/token.
 
-## Usage
+## Data Model
 
-### 1. Export Directly to a New Google Sheet
+Each row: **USERS** | **DATE** | **TYPE** | **TOKENS**.
 
-Opens a new Google Sheet, pastes the extracted data into columns `USERS` and `TOKENS`, sets the title, and returns the sheet URL:
+- The payout-account row → **Payout** → token count is **negative**.
+- Any other row (studio/model accounts, deleted accounts) → **Transfer to studio** →
+  positive.
 
-```bash
-# Optional configuration:
-# export STRIPCHAT_CHROME_PROFILE="your_email@example.com"
-# export STRIPCHAT_CHROME_DIR="Profile 1"
+## Rules (in order)
 
-bash scripts/export_to_sheets.sh
+1. **Section boundary = each payout row.** A new section starts at every payout row; the
+   rows that follow it (same/next studio-transfer dates) belong to that payout until the
+   next payout row.
+2. **Header for each section:** the payout **date + its token total**, e.g.
+   `Section — Payout <date>: <total>`. The total is the single payout-row amount (one
+   payout per section).
+3. **Table body:** only **USERS and TOKENS** columns. Drop the header row and the payout
+   row. Keep every "Transfer to studio" user row.
+4. **Clean numbers:** strip all whitespace and commas from token counts
+   (e.g. `1 234` → `1234`, `-5 678` → `-5678`). Preserve the negative sign.
+5. **Output format:** each section as a fenced TSV block, `USER<TAB>TOKEN` per row, with
+   no code-block-internal header row.
+6. If a section has no transfer rows, state it (e.g. `<empty>`), don't invent data.
+7. Preserve usernames verbatim as shown in the source.
+
+## Output skeleton
+
+```
+**Section N — Payout <date>: <total>**
+<user>	<token>
+<user>	<token>
 ```
 
-### 2. Output as Clean TSV
+## Source ambiguity
 
-Outputs tab-separated values directly to stdout:
+When the input is a **screenshot**, cross-check the token counts with a vision step before
+finalizing (numbers can be misread; don't trust a first glance). When it's **pasted text**
+(extracted OCR/HTML), the numbers are authoritative if the paste is complete.
 
-```bash
-bash scripts/extract_tokens.sh
-```
+## Pitfalls
 
-## Configuration
-
-| Environment Variable | Default | Description |
-|---|---|---|
-| `STRIPCHAT_CHROME_PROFILE` | *(first active)* | Profile email/identifier to match in `playwriter session list` |
-| `STRIPCHAT_CHROME_DIR` | `Default` | Profile directory name for launching Chrome (e.g. `Default`, `Profile 1`) |
-
-## Data Extraction Rules
-
-- Target URL: `https://stripchat.com/earnings/tokens-history`
-- Table Structure: `div.data-table-body-row` containing `.table-cell-username` and `.align-right`
-- Cleans whitespace (including non-breaking spaces) and commas from token counts (e.g. `9 090` -> `9090`, `-1 673` -> `-1673`)
-- Output Headers: `USERS\tTOKENS`
-
-## Portability
-
-Assumes the host has `bash`, `node`/`playwriter`, and `chrome`. On Windows, clipboard transfer uses PowerShell (`Set-Clipboard`); on macOS/Linux, `pbcopy` or `xclip` can be used as fallback.
+- Don't strip the negative sign from the payout row — that's the payout amount.
+- Always end a section at the next payout row, even if a transfer date is newer.
+- If a later payout row has no trailing transfers in the visible source, emit that payout
+  as its own (possibly empty) section rather than merging.
