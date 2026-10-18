@@ -6,6 +6,7 @@ are safe to reuse in any agent.
 
 | Skill | Description |
 |---|---|
+| [baby-girl-name](baby-girl-name/) | Generate cute, wholesome, brandable 8–12 letter social media usernames for baby-girl persona. |
 | [docren](docren/) | Suggest structured filenames based on document content (PDF/Word) using vision, with searchable OCR conversion. |
 | [idocr](idocr/) | Multi-country identity document (national IDs, passports) OCR using vision models and image pre-processing. |
 | [picx](picx/) | PicX-style image hosting and management via GitHub API with CDN linking (jsDelivr, Statically). |
