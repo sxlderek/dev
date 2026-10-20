@@ -22,8 +22,9 @@ Portable document renaming skill that works across environments. Uses vision-cap
 1. Reply with acknowledgment: "I swear I will not judge a file by its name."
 2. Check the configured docren root directory and/or mailbox (e.g. via Himalaya)
 3. Process documents from both locations (vision rename → ocrmypdf searchable)
-4. After processing each email's attachment, delete or archive the processed email message from the mailbox
-5. Clean up: delete `temp_vision/` when done
+4. **Automatic Execution & Sorting (MANDATORY)**: Automatically make the PDF searchable, apply renames immediately, and move the processed files into a `sorted/` subdirectory under the docren path. Do NOT ask the user for confirmation before executing.
+5. After processing each email's attachment, delete or archive the processed email message from the mailbox
+6. Clean up: delete `temp_vision/` when done
 
 ## Automation Policy
 - **No scheduled processing**: do not create or rely on recurring cron jobs for docren unless the user explicitly asks for automation.
@@ -74,6 +75,14 @@ Uses a vision-capable model for visual document understanding (reading letterhea
 ## Workflow
 
 ### 1. Determine Mode
+
+**OneDrive Cloud Sync Mode:**
+When the user mentions `docren` with OneDrive, or when `DOCREN_PATH` points to `onedrive/docren`:
+- Execute `/opt/data/skills/productivity/docren/scripts/sync_onedrive.py`
+- Downloads pending files from OneDrive `/docren` to local staging `/workspace/docren/staging`
+- Applies OCR (`ocrmypdf`) and structured renaming
+- Uploads the processed searchable PDFs to OneDrive `/docren/sorted/`
+- Cleans up source files from `/docren`
 
 **Automatic Batch Mode:**
 When the user types `docren` alone (no file upload, no explicit path):
