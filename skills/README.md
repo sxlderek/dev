@@ -10,6 +10,7 @@ are safe to reuse in any agent.
 | [ai-provider-research](ai-provider-research/) | Research AI inference providers, verified pricing tables, capabilities, and privacy/ZDR policies. |
 | [baby-girl-name](baby-girl-name/) | Generate cute, wholesome, brandable 8–12 letter social media usernames for baby-girl persona. |
 | [cdn-checker](cdn-checker/) | Passive detection of CDN edge networks, WAF, bot challenges (Turnstile/CAPTCHA), and deep asset inspection. |
+| [cheatsheet-maker](cheatsheet-maker/) | Research a topic or URL and save a one-page cheat sheet to a SilverBullet space, linked from the space index. |
 | [chaturbate-payout](chaturbate-payout/) | Extract Chaturbate token history into a clean Google Sheet or TSV table. |
 | [cli-install](cli-install/) | Generate verified, single-path Windows PowerShell installation scripts without fallbacks. |
 | [docren](docren/) | Suggest structured filenames based on document content (PDF/Word) using vision, with searchable OCR conversion. |
