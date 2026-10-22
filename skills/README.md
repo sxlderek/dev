@@ -19,6 +19,7 @@ are safe to reuse in any agent.
 | [pet-tag-avatar](pet-tag-avatar/) | Generate 1:1 manga baby pet avatars wearing prominent rectangular silver name ID tags. |
 | [picx](picx/) | PicX-style image hosting and management via GitHub API with CDN linking (jsDelivr, Statically). |
 | [pwgen](pwgen/) | Generate a 17-character custom pattern password starting and ending with lowercase, with mixed case, digits, and underscores. |
+| [say-morning](say-morning/) | Generate FIFA kid cartoon avatar saying 早晨 via gpt-image-2.5. |
 | [selfcheck](selfcheck/) | System health diagnostic checking availability of required CLI tools, media libraries (ffmpeg, ImageMagick), and workspace hygiene. |
 | [siliconflow-skill](siliconflow-skill/) | SiliconFlow API workflows for chat, image generation, TTS, and ASR audio transcription. |
 | [skill-publish](skill-publish/) | Sanitize, generalize, and publish an agent skill to a public repo. |
