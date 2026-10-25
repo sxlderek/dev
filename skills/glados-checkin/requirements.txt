@@ -1,0 +1,6 @@
+# GLaDOS 自动签到依赖（本地版）
+# 必需
+requests
+# 可选：仅在配置了对应推送密钥时才需要
+pypushdeer
+serverchan-sdk
