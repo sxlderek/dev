@@ -13,7 +13,7 @@ are safe to reuse in any agent.
 | [cheatsheet-maker](cheatsheet-maker/) | Research a topic or URL and save a one-page cheat sheet to a SilverBullet space, linked from the space index. |
 | [chaturbate-payout](chaturbate-payout/) | Extract Chaturbate token history into a clean Google Sheet or TSV table. |
 | [cli-install](cli-install/) | Generate verified, single-path Windows PowerShell installation scripts without fallbacks. |
-| [docren](docren/) | Suggest structured filenames based on document content (PDF/Word) using vision, with searchable OCR conversion. |
+| [docren](docren/) | Rename scanned/digital documents via vision into structured filenames, make them searchable (ocrmypdf), sort, sync to OneDrive via rclone, and email the results. |
 | [football-fans-avatar](football-fans-avatar/) | Generate FIFA national football fan 2D cartoon avatars with Ghibli/Miyazaki styling and directional gaze. |
 | [glados-checkin](glados-checkin/) | Local GLaDOS (glados.cloud / railgun.info) daily check-in: earn points, track remaining days, optional auto-exchange and push notifications — no GitHub Actions. |
 | [idocr](idocr/) | Multi-country identity document (national IDs, passports) OCR using vision models and image pre-processing. |

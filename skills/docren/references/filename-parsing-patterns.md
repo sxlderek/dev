@@ -30,18 +30,18 @@ This reference documents the filename extraction patterns for batch document ren
 
 ### 3. Company-DocType Pattern
 ```
-HSBC MPF inz3.pdf
+HSBC MPF abc1.pdf
 → date: default (20250501)
 → company: HSBC
-→ doc_number: inz3
+→ doc_number: abc1
 → type: mpf-statement
 ```
 
 ### 4. Invoice Pattern
 ```
-SW001-INV-75-Rental 260101.pdf
+ABC01-INV-75-Rental 260101.pdf
 → date: 260101 → 20260101 (YYMMDD → YYYYMMDD)
-→ company: SW001
+→ company: ABC01
 → doc_number: INV-75
 → type: rental-invoice
 ```
@@ -57,10 +57,10 @@ ACME-Invoice-64845 OCT2025-MAR2026 USD2418_HS.pdf
 
 ### 6. eBill Pattern
 ```
-eBill-022677128-202603-22-1.pdf
+eBill-012345678-202603-22-1.pdf
 → date: 20260322
 → company: HKBN (eBill is HKBN service)
-→ doc_number: 022677128
+→ doc_number: 012345678
 → type: invoice
 ```
 
@@ -79,10 +79,26 @@ eBill-022677128-202603-22-1.pdf
 |-----------|------|
 | HKBN | hkbn |
 | HSBC | hsbc |
-| EastRise | eastrise |
-| SW001 | sw001 |
-| Sunlight | sw001 |
+| EastCo | eastco |
+| ABC01 | abc01 |
+| SunCo | abc01 |
 | ACME | acme |
+
+## Confirmed Rename-Output Conventions (by issuer)
+
+Confirmed from archived `sorted/` names — match these exactly when renaming faxes/statements so the archive stays consistent. Skeleton: `<YYYYMMDD> <issuer-slug> <ref> <Description> <MMM YYYY>.pdf` where the date is the document's own date (bill cut date, statement date), not the fax/scan date.
+
+| Issuer | Pattern | Example |
+|--------|---------|---------|
+| hkt (bills) | `YYYYMMDD hkt <account-no> Bill MMM YYYY.pdf` (date = bill cut date) | `20260921 hkt 68-123456-7890-12 Bill Sep 2026.pdf` |
+| hkt (forms) | `YYYYMMDD hkt <ref> <Form Description>.pdf` | `20261010 hkt 12345678 Change of Registered Customer Application Form.pdf` |
+| bochk (consolidated) | `YYYYMMDD bochk <statement-ref> Consolidated Statement MMM YYYY.pdf` | `20260831 bochk 1234567890 Consolidated Statement Aug 2026.pdf` |
+| bochk (account) | `YYYYMMDD bochk <account-no> Account Statement MMM YYYY.pdf` | `20260831 bochk 014-123-0-004567-8 Account Statement Aug 2026.pdf` |
+
+| clp | `YYYYMMDD clp <account-no> Electricity Bill MMM YYYY.pdf` (date = statement date) | `20260919 clp 12345-67890-1 Electricity Bill Sep 2026.pdf` |
+| hkbn | `YYYYMMDD hkbn <account-no> Broadband and Service Bill MMM YYYY.pdf` (date = bill date) | `20260831 hkbn 123456789 Broadband and Service Bill Aug 2026.pdf` |
+
+Before naming an unfamiliar issuer, list existing `sorted/` names (`orderby=name asc`) and match the established shape rather than inventing a new one.
 
 ## Document Type Mapping
 
@@ -136,8 +152,8 @@ def extract_info_from_filename(filename):
     companies = {
         "hkbn": "HKBN",
         "hsbc": "HSBC",
-        "eastrise": "EastRise",
-        "sw001": "SW001",
+        "eastco": "EastCo",
+        "abc01": "ABC01",
         "acme": "ACME",
     }
     for key, company in companies.items():
