@@ -1,7 +1,7 @@
 ---
 name: docren
 description: "Intelligent document renamer with local and OneDrive sync."
-version: 3.2.1
+version: 3.5.0
 license: MIT
 ---
 
@@ -21,8 +21,8 @@ Portable document renaming skill that works across environments. Uses vision-cap
 **When user runs batch docren:**
 1. Reply with acknowledgment: "I swear I will not judge a file by its name."
 2. Check the configured docren root directory and/or mailbox (e.g. via Himalaya)
-3. Process documents from both locations (vision rename → ocrmypdf searchable)
-4. **Automatic Execution & Sorting (MANDATORY)**: Automatically make the PDF searchable, apply renames immediately, and move the processed files into a `sorted/` subdirectory under the docren path. Do NOT ask the user for confirmation before executing.
+3. Process documents from both locations (vision rename → ocrmypdf searchable with --deskew)
+4. **Automatic Execution & Sorting (MANDATORY)**: Automatically make the PDF searchable (with `--deskew` to straighten crooked pages), apply renames immediately, and move the processed files into a `sorted/` subdirectory under the docren path. Do NOT ask the user for confirmation before executing.
 5. After processing each email's attachment, delete or archive the processed email message from the mailbox
 6. Clean up: delete `temp_vision/` when done
 7. **Duplicate-check before uploading (mailbox faxes)**: senders re-transmit the same sheet (same ref, same page count), and a duped upload pollutes the archive. Before uploading, compare the new scan against the same-reference file already in `sorted/` by rendering both with `scripts/cmp_pdfs.py` — plain pixel diff alone is unreliable because fax header strips, skew and noise differ between transmissions; use the perceptual-hash hamming distance (~<=10/256 on matching page count = same document). On a match: do NOT upload a second copy, archive the email as usual, and tell the user a duplicate was skipped (offer to keep it if they want).
@@ -74,7 +74,7 @@ Uses a vision-capable model for visual document understanding (reading letterhea
 **Always use a vision-capable model or vision tool** for document understanding and renaming.
 
 1. **Step 1 — Rename with Vision** (REQUIRED): Use vision analysis to identify date, issuer, number, type
-2. **Step 2 — Convert to Searchable** (REQUIRED): Use `ocrmypdf` to make PDF searchable
+2. **Step 2 — Convert to Searchable & Deskew** (REQUIRED): Use `ocrmypdf` with `--deskew` to straighten pages and make PDF searchable
 3. Extract only minimum fields: date, company, document number, document type
 4. Ask for clarification only when ambiguity remains
 
@@ -164,10 +164,12 @@ When user asks to check email for PDF attachments:
 5. If vision disagrees, **trust vision**
 
 **Scanned PDFs:**
-1. Remove blank pages first (see Blank Page Removal section)
-2. **Rename with vision first** (render page 1 to PNG, use `vision_analyze`)
-3. **Then convert to searchable** with `ocrmypdf`
-4. Save searchable PDF with the correct name
+1. Render each page to an image and inspect for distinct bundled documents: physical sheet feeders often scan multiple separate 1-page documents into a single multi-page PDF (each page showing its own "Page 1 of 1" or independent invoice/document number).
+2. If multi-document bundle detected, split pages into distinct PDFs first with `pymupdf` before OCR/naming.
+3. Remove blank pages from each document (see Blank Page Removal section).
+4. **Rename with vision first** (render page 1 to PNG, use `vision_analyze`).
+5. **Then deskew and convert to searchable** with `ocrmypdf --deskew`.
+6. Save searchable PDF with the correct name.
 
 **Word Documents:**
 1. Extract text directly from `.docx` files
@@ -180,14 +182,17 @@ Remove blank pages before OCR or vision analysis to improve accuracy and speed:
 - Render pages at 72 DPI and compute non-white pixel ratio (`sample < 240`). Pages with non-white ratio < 0.01 are blank and should be removed (`doc.delete_page(page_num)`) before running `ocrmypdf`.
 - `import pymupdf`, not `import fitz` (fitz alias is deprecated and warns); and `Pixmap.is_unicolor` is a PROPERTY (`pix.is_unicolor`), not a method — calling it raises `TypeError: 'bool' object is not callable`.
 
-### 2.2 PDF-to-Searchable Conversion
-Use `ocrmypdf --skip-text -l eng+chi_tra "<input.pdf>" "<output.pdf>"` to convert scanned PDFs to searchable text.
+### 2.2 PDF-to-Searchable Conversion & Deskew
+Use `ocrmypdf --deskew --skip-text -l eng+chi_tra "<input.pdf>" "<output.pdf>"` (or `-l eng+chi_sim`) to deskew crooked scans and convert to searchable text in one pass.
+- `--deskew` (`-d`): detects skew angle via Leptonica and straightens page raster images before adding the OCR layer.
+- `--rotate-pages` (`-r`): optionally add if pages might be rotated sideways or upside-down.
 
 **Check before OCR — many "scanned" bills are already digital.** Extract text per page with pymupdf first (`[len(p.get_text().strip()) for p in doc]`). Non-zero char counts on every non-blank page mean the PDF already carries a text layer and is searchable: skip `ocrmypdf` entirely rather than re-processing. A page-count that looks short is not proof of truncation — read the document's own page marker (e.g. "page 1/2") before assuming pages are missing.
 
 ### 3. Parse and Structure Information
 - **Date (YYYYMMDD)**: Document issue date from content (never filename).
 - **Company Slug**: Issuer (document creator/letterhead), NOT recipient.
+  - **Company Name Replacement Rule**: Always replace company name "systems xpress" or "system xpress limited" (and any variations) with `sxl` (or `SXL`).
 - **Document Number**: Labeled reference/invoice number or `NA`.
 - **Short Description**: Concise description (e.g. invoice, broadband-statement).
 

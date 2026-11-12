@@ -77,6 +77,7 @@ eBill-012345678-202603-22-1.pdf
 
 | Full Name | Slug |
 |-----------|------|
+| Systems Xpress / System Xpress Limited | sxl (SXL) |
 | HKBN | hkbn |
 | HSBC | hsbc |
 | EastCo | eastco |
@@ -150,6 +151,9 @@ def extract_info_from_filename(filename):
     
     # 2. Company extraction
     companies = {
+        "systems xpress": "SXL",
+        "system xpress limited": "SXL",
+        "system xpress": "SXL",
         "hkbn": "HKBN",
         "hsbc": "HSBC",
         "eastco": "EastCo",
