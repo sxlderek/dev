@@ -20,6 +20,11 @@ Use this reference when extending or debugging the extraction logic in `scripts/
 | 签发机关 | Authority | `authority` | Issuing organ |
 | 有效期限 | Validity | `validity` | Valid date range |
 
+### Card layout (photos)
+- Front (landscape ~1440×810): 姓名, 性别, 民族, 出生, 住址, 公民身份号码.
+- Back (portrait ~810×1440): 签发机关 + 有效期限 only — the validity period is NOT on the front; read the correct side for each field.
+- ID number anatomy: digits 1-6 region code, 7-14 birth date (YYYYMMDD), 17 = sex (odd M / even F), 18 = ISO 7064 MOD 11-2 check digit.
+
 ### Name splitting
 - Name is one continuous block: 陈伟
 - Single-char surnames (~80%): 陈, 王, 李, 张, 刘, 杨, 黄, 赵, 周, 吴, 徐, 孙, 马, 朱, 胡, 郭, 何, 高, 林, 罗, 郑, 梁, 谢, 宋, 唐, 韩, 曹, 许, 邓, 萧, 冯, 曾, 程, 蔡, 彭, 潘, 袁, 于, 董, 余, 苏, 叶, 吕, 魏, 蒋, 田, 杜, 丁, 沈, 任, 姚, 卢, 傅, 钟, 崔, 廖, 谭, 汪, 范, 金, 方, 石, 夏, 熊, 秦, 邱, 侯, 白, 江, 史, 龙, 万, 段, 雷, 钱, 汤, 尹, 黎, 易, 常, 武, 乔, 贺, 赖, 龚, 文

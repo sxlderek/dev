@@ -58,7 +58,7 @@ Full Name (Native): 陈曼
 Full Name (EN): Chen Man
 DOB: [DOB]0
 Document type: National ID
-Document number: 340406*********063
+Document number: <[DocNumber]>
 Issuing country: China
 Issuing authority: 淮南市公安局潘集分局
 Expiry: 2045-03-19

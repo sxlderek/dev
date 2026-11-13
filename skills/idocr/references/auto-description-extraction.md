@@ -11,7 +11,7 @@ On [DOB]1, two Chinese ID card images were uploaded. The system provided full-te
 - Card type (Chinese Resident Identity Card)
 - Name ([Name])
 - DOB (1998 年 5 月 13 日)
-- ID number (622722*********626)
+- ID number (<[DocNumber]>)
 - Issuing authority (泾州县公安局)
 - Validity period (2023.03.16-2033.03.16)
 - Gender, ethnicity, address

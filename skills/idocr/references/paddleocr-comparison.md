@@ -21,7 +21,7 @@ Models (~200MB) auto-download on first run to `~/.paddlex/official_models/`.
 | Gender | 女 | 0.57 | 女 | **0.999** | 女 |
 | Ethnicity | 汊 ❌ | 0.61 | **汉** ✅ | **1.000** | 汉 |
 | DOB | [DOB]0 ❌ | 0.10 | [DOB]0 ❌ | **1.000** | [DOB] |
-| ID number | 340406*********785 ❌ | 0.91 | 340406*********785 ❌ | **1.000** | 360681*********528 |
+| ID number | <[DocNumber]> ❌ | 0.91 | <[DocNumber]> ❌ | **1.000** | <[DocNumber]> |
 | Address | 安徽省淮南市... ✅ | — | 安徽省淮南市... ✅ | — | Same |
 
 ## Clean Photo Comparison ([Name] 1246258893.jpg)
@@ -31,7 +31,7 @@ Models (~200MB) auto-download on first run to `~/.paddlex/official_models/`.
 | Name | [Name] | 0.97 | [Name] | **1.000** | [Name] |
 | Address province | 江**酉**省 ❌ | — | **江西省** ✅ | **1.000** | 江西省 |
 | Issuing authority | 龙虎**田** ❌ | 0.08 | **龙虎山** ✅ | **1.000** | 龙虎山 |
-| ID number | 360681*********528 ✅ | 0.75 | 360681*********528 ✅ | **1.000** | Same |
+| ID number | <[DocNumber]> ✅ | 0.75 | <[DocNumber]> ✅ | **1.000** | Same |
 | DOB | [DOB] ✅ | 0.75 | [DOB] ✅ | **0.999** | Same |
 
 ## Key Findings
