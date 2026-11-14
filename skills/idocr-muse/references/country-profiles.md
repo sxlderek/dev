@@ -1,13 +1,12 @@
 # Country Profiles for ID Document Extraction
 
 Field labels, date formats, and ID number patterns for each supported country.
-Use this reference when extending or debugging the extraction logic in `scripts/extract_id.py`.
+Use this reference when extending or debugging this skill's extraction.
 
 ---
 
 ## China 🇨🇳 — 身份证 (National ID Card)
 
-**Tesseract language:** `chi_sim+eng`
 
 | Field label | English | Field name | Format / Notes |
 |---|---|---|---|
@@ -30,7 +29,6 @@ Use this reference when extending or debugging the extraction logic in `scripts/
 
 ## China 🇨🇳 — 护照 (Passport)
 
-**Tesseract language:** `chi_sim+eng`
 
 | Field label | English | Field name | Format / Notes |
 |---|---|---|---|
@@ -47,7 +45,6 @@ Use this reference when extending or debugging the extraction logic in `scripts/
 
 ## Hong Kong 🇭🇰 — 香港身份证 (HKID)
 
-**Tesseract language:** `chi_tra+eng`
 
 | Field label | English | Field name | Format / Notes |
 |---|---|---|---|
@@ -69,7 +66,6 @@ Use this reference when extending or debugging the extraction logic in `scripts/
 
 ## Japan 🇯🇵 — 旅券 (Passport)
 
-**Tesseract language:** `jpn+eng`
 
 | Field label | English | Field name | Format / Notes |
 |---|---|---|---|
@@ -98,7 +94,6 @@ Use this reference when extending or debugging the extraction logic in `scripts/
 
 ## Japan 🇯🇵 — マイナンバー (My Number Card)
 
-**Tesseract language:** `jpn+eng`
 
 | Field label | English | Field name | Format / Notes |
 |---|---|---|---|
@@ -111,7 +106,6 @@ Use this reference when extending or debugging the extraction logic in `scripts/
 
 ## Russia 🇷🇺 — Загранпаспорт (International Passport)
 
-**Tesseract language:** `rus+eng`
 
 | Field label | English | Field name | Format / Notes |
 |---|---|---|---|
@@ -139,7 +133,6 @@ Use this reference when extending or debugging the extraction logic in `scripts/
 
 ## Russia 🇷🇺 — Паспорт РФ (Internal Passport)
 
-**Tesseract language:** `rus+eng`
 
 Same field labels as international passport. Main differences:
 

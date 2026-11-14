@@ -1,57 +1,33 @@
 ---
 name: idocr-muse
-description: OCR identity documents (national IDs, passports) from multiple countries — extract structured fields using `aa/gemma-4-31b-vision-combo` (primary) or SiliconFlow Qwen3-VL-32B-Instruct (fallback). Optional local PaddleOCR fallback.
-version: 2.3.0
+description: OCR identity documents (national IDs, passports) from multiple countries and extract structured fields. Muse reads the document images directly — no external OCR service. Also flattens card photos to <150KB JPGs and extracts the printed headshot photo.
+version: 3.0.0
 author: <AUTHOR>
 ---
 
-# ID-OCR Skill (Consolidated)
+# ID-OCR Skill
 
 ## Overview
 
-Extract identity fields from ID document images using **SiliconFlow Qwen3-VL-32B-Instruct** (primary) or local **PaddleOCR/EasyOCR/Tesseract** (offline fallback). Supports China (ID + Passport), Hong Kong (HKID), Japan (Passport + My Number), and Russia (Internal + International Passport).
+Extract identity fields from ID document images. On Muse the extraction is done by reading the uploaded images directly — there is no external OCR API, no bot integration, and no separate vision provider to configure.
 
-This skill consolidates the former `id-ocr-skill`, `id-ocr-extraction`, and `idocr` skills into one.
-
-## What Changed in This Version (2.1.0)
-
-- Updated to reflect user corrections from a previous session:
-  - Finalized the 7-field output format (removed `Issue date`)
-  - Documented Telegram Bot API auto-send for code box rendering on platforms that can't render markdown fences
-  - Documented Hermes Desktop GUI rendering behavior with code fences vs. images. See `references/platform_rendering.md`.
-  - Captured Telegram E2EE research. See `references/telegram-privacy-and-e2ee.md`.
-- Updated all references (test results + platform rendering + Telegram privacy)
+Supports China (ID card + passport), Hong Kong (HKID), Japan (passport + My Number card), and Russia (internal + international passport).
 
 ## When to Use
 
 Use this skill when the user types **"idocr"** or asks to OCR/scan/extract data from an ID document image.
 
-## Performance Shortcut: Auto-Description Extraction
+## Default Deliverables
 
-When images arrive via API-based clients (Open WebUI, Cherry Studio, etc.), Hermes may auto-describe them before you see them. If those descriptions contain the full readable text (names, numbers, dates), skip SiliconFlow and extract fields directly from the description. This is faster (instant vs 2-5s) and costs zero API tokens.
+For each idocr run, deliver all three, presented inline in the reply:
 
-When to use this shortcut:
-- Auto-description has all visible fields (as it did this session — name, DOB, ID number, issuing authority, expiry were all spelled out)
-- Document is a common type (CN ID, passport, HKID)
-- Image quality is good (well-lit, in-focus)
+1. The 9-field extraction (code block below).
+2. The flattened front and back card JPGs (<150 KB each) — see Card Photo Flattening.
+3. The extracted headshot photo — see Headshot Photo Extraction.
 
-When NOT to use:
-- Description is vague ("an ID card with some text")
-- Image is blurry or low quality
-- Document type is unusual or multilingual
-- You need guaranteed OCR accuracy on tricky fields
+## Required Output Fields (in exact order)
 
-Always verify extracted fields for internal consistency (DOB matches ID number digits, etc.). The auto-description is a free bonus, not a guaranteed feature.
-
-## Core Rules
-
-### Image Requirements
-- Ask for the image first if none provided
-- Document can be in any language — ask if unclear
-- Copy to ASCII path if using the local PaddleOCR pipeline (Chinese paths break OpenCV)
-### Required Output Fields (in exact order)
-
-Return results in a **Markdown code block** by default (web clients, Cherry Studio, Open WebUI render them fine). Each field on its own line:
+Return results in a **Markdown code block** by default. Each field on its own line:
 
 ```
 Full Name (Native): ...
@@ -61,179 +37,55 @@ Document type: National ID | Driving License | Passport | HK/Macau Pass(港澳�
 Document number: ... | [unclear]
 Issuing country of the document: ...
 Expiry: YYYY-MM-DD | N/A | [unclear]
+Address: (original language)
+Address (EN): (English translation)
 ```
 
 ### Format notes (user preferences)
-- **No field for date of issue or issue date** — user explicitly removed this from the output format.
-- **Full Name (EN) format**: Surname first, then given name. Example: `Doe, JOHN` NOT `John, DOE`. The user's particular document uses the surname-first format `Doe, JOHN`.
-- **Telegram auto-send**: Always send OCR results to the user's Telegram in a code box using the Bot API with `parse_mode: Markdown`.
-- **Space before pipe in tables**: The user noticed and corrected spacing in tables. Use proper markdown table formatting with spaces around pipes: `| Field | Value |` not `|Field|Value|`.
-- **Copy-paste ready output**: User prefers clean output that can be immediately copy-pasted without any prefix or framing text. The code block should contain ONLY the 7 fields.
+- **No field for date of issue** — the user explicitly removed it from the output format. Do not reintroduce it.
+- **Full Name (EN) format**: surname first, then given name — `Doe, JOHN`, NOT `John, DOE`.
+- **Copy-paste ready output**: the code block should contain ONLY the 9 fields, with no prefix or framing text inside it.
+- Use proper markdown table formatting with spaces around pipes: `| Field | Value |`, not `|Field|Value|`.
 
 **Field rules**:
 | Field | Rule |
 |---|---|
 | Full Name (Native) | Native script name. `[unclear]` if missing |
-| Full Name (EN) | Romanized name in **surname-first order with mixed case**, e.g. `Doe, JOHN` (surname capitalized, given name capitalized). The OCR may return all-caps like `DOE, JOHN` — normalize case but keep surname-first order. |
+| Full Name (EN) | Romanized name in **surname-first order**, e.g. `Doe, JOHN`. If the document prints it all-caps or given-name-first, normalize the case but keep surname-first order. |
 | DOB | YYYY-MM-DD. `[unclear]` if illegible |
 | Document type | `National ID`, `Passport`, `Driving License`, `HK/Macau Pass(港澳通行證)`, or `[unclear]` |
 | Document number | Number or `[unclear]` |
-| Issuing country | Full country name (e.g. "China" not "CHN") — user corrected this on [DOB]1 |
+| Issuing country | Full country name (e.g. "China", not "CHN") |
 | Expiry | YYYY-MM-DD, `N/A` (no expiry), or `[unclear]` |
+| Address | Original-language address exactly as printed on the document. `[unclear]` if illegible |
+| Address (EN) | English translation of the address in proper English format (street, district, city, province, postal code) |
 
 ### Language Rules
-- The output fields always use English labels regardless of the platform
-- The surrounding commentary follows the user's language preference:
-  - Cantonese → Traditional Chinese + HK vernacular/slang
-  - English → plain simple English
-  - Mandarin → Simplified Chinese + China vernacular/slang
-- Missing/illegible fields → `[unclear]`
-- No expiry date → `N/A`
-- Convert ALL CAPS English names to mixed case, **given-name surname** order (e.g. `CHAN TAI MAN` → `Tai Man Chan`)
-- Normalise all dates to YYYY-MM-DD
+- The output field labels are always in English.
+- The surrounding commentary follows the user's language.
+- Missing/illegible fields → `[unclear]`; no expiry date → `N/A`.
+- Normalise all dates to YYYY-MM-DD.
 
-### Rendering Platform Detection
+## Workflow
 
-| Platform | Code fences | Images | Recommended format |
-|---|---|---|---|
-| Hermes Desktop GUI | ✗ Shows raw backticks | ✓ `![alt](url)` with HTTP(S) URL | Plain text, one field per line. For images, use markdown image syntax with GitHub-hosted URL. |
-| Cherry Studio / Open WebUI / Web | ✓ Fenced blocks render | ✓ `![alt](url)` | Markdown with fenced code block. |
-| Telegram (via bridge) | ✗ No formatting | ✗ | Send via Bot API with `parse_mode: "Markdown"` (see Telegram Auto-Send section). |
-| WhatsApp | ✗ No formatting | ✗ | Plain text only. |
+1. If no image was provided, ask for one: a clear, in-focus photo or scan, front **and** back if the document has fields on the back, all four corners visible, no heavy glare.
+2. Read the images directly and extract the fields. For two-sided documents (e.g. CN ID cards), read **both sides together** before extracting — the fields are split across the sides.
+3. Run the cross-checks below and report the result with the extraction.
+4. Produce the flattened card images and the headshot (Default Deliverables).
 
-**Rule**: Default to plain text on Hermes Desktop GUI. Default to fenced code block on Web/Cherry/OpenWebUI. For Telegram, always provide plain text AND send via Bot API with `parse_mode: Markdown` for proper rendering.
+### Validation & Cross-Checks
 
-### Telegram Auto-Send (Always)
+| Check | What it catches |
+|---|---|
+| CN ID checksum (ISO 7064 MOD 11-2) | Wrong digits in the ID number |
+| DOB ↔ ID number digits 7–14 | Inconsistent DOB vs the number's embedded birthdate |
+| Region code (ID digits 1–6) ↔ printed address | Wrong digits; also identifies the original registration district |
+| Gender digit (ID digit 17: odd = male, even = female) ↔ printed sex | Wrong digits |
 
-After displaying results, **also send the results to the user's Telegram** in a code box using the Telegram Bot API:
-
-**Endpoint:**
-```json
-POST https://api.telegram.org/bot/sendMessage
-```
-
-```json
-{
-  "chat_id": [CHAT_ID],
-  "text": "```\nFull Name (Native): ...\nFull Name (EN): ...\nDOB: ...\n...\n```",
-  "parse_mode": "Markdown"
-}
-```
-
-**Critical:**
-- **Never hardcode tokens or chat IDs in this file** — reference `.env` vars only
-- Use Python `requests`, never curl (Chinese chars break curl `--data` on Windows MSYS/Git-Bash)
-- Build the text payload programmatically from extracted fields (not copied from display output)
-```
-
-**Requirements:**
-- Telegram bot token: stored in `.env` as `TELEGRAM_BOT_TOKEN` (do NOT hardcode — reading from `.env` at runtime)
-- Chat ID: stored in `.env` as `TELEGRAM_CHAT_ID`
-- Use Python `requests` library (not curl) to avoid shell escaping issues with Chinese characters
-- Always use `parse_mode: "Markdown"` to render the code block correctly
-- Send immediately after displaying the results — do not ask permission
-- Build the text payload programmatically from the extracted fields, not from the display output
-- Use Python `requests` library (NOT curl) — curl on Windows/MSYS breaks on Chinese characters
-
-**Helper script:** `scripts/send_telegram_code_block.py` (reads from `.env` automatically)
-
----
-
-## Vision Model (Primary)
-
-**Primary: `aa/gemma-4-31b-vision-combo`** — use `vision_analyze()` with this model for ID document reading. This is the first choice for vision-based OCR.
-
-**Config:** Requires `auxiliary.vision.provider: custom:omniroute` (with colon) in config.yaml. Bare `custom` routes to Google Gemini, NOT OmniRoute. See `references/vision-config-pitfalls.md` for full details.
-
-When `vision_analyze` fails (provider down, model_not_found), fall back to **SiliconFlow Qwen3-VL-32B-Instruct** API.
-
-## Config Reload Protocol (Critical)
-
-Editing `config.yaml` → `vision_analyze` does NOT automatically pick up changes. You MUST restart the Hermes GUI process.
-
-| Command | What it restarts | Vision config reloaded? |
-|---------|-----------------|------------------------|
-| `hermes gateway restart` | Messaging gateway only | ❌ NO |
-| Full GUI restart (kill + relaunch) | Agent host + gateway | ✅ YES |
-
-**Full GUI restart procedure (Windows):**
-```powershell
-# In PowerShell (not MSYS/Git-Bash):
-taskkill /f /im Hermes.exe
-hermes desktop
-```
-
-**Symptoms of stale config:**
-- `grep` shows correct values in config.yaml but `vision_analyze` still fails with old error
-- Provider still shows as `aa` instead of `custom:omniroute`
-- `hermes auth list` shows `custom:omniroute` as empty (`[]`)
-
-See `references/vision-config-pitfalls.md` for full debug checklist.
-
-## OCR Backend (Fallback)
-
-**SiliconFlow Qwen3-VL-32B-Instruct** via API. No local dependencies.
-
-### Workflow
-1. User uploads ID image (photo or scan)
-2. If PDF, render first page to PNG at 150 DPI
-3. Call `https://api.siliconflow.cn/v1/chat/completions` with `Qwen/Qwen3-VL-32B-Instruct`
-4. Send base64-encoded image + extraction prompt at temperature 0.0
-5. Parse structured fields from response
-
-### Script
-```bash
-# first load SILICONFLOW_API_KEY into the environment (e.g. from your .env file)
-python3 scripts/ocr_via_siliconflow.py --input /path/to/id.jpg
-```
-
-### Dual-Side Processing (CN ID Card)
-Chinese ID cards split info across front and back. Send **both images in one API call** for merged extraction:
-
-```python
-# Both images in a single content array — put back (info side) first
-"content": [
-  {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{back_b64}"}},
-  {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{front_b64}"}},
-  {"type": "text", "text": "These are the two sides of a Chinese national ID card. Extract ALL fields."}
-]
-```
-
-See `references/dual-image-processing.md` for full example.
-
-### Why SiliconFlow over local OCR
-- Perfect accuracy on mixed CN/EN documents (tested)
-- No local dependencies (no Tesseract, no OpenCV, no model weights)
-- Handles any language, any layout
-- ~2,700 tokens per call
-
-### Caveats
-- Requires `SILICONFLOW_API_KEY` in `.env` — source before use
-- Large images (300+ DPI scans) may exceed payload limits — render at 150 DPI
-
----
-
-## Offline Fallback (Legacy — Scripts **Removed**)
-
-The former local PaddleOCR pipeline (`extract_id.py`, `paddleocr_helper.py`) was in `id-ocr-extraction` which has been consolidated into this skill. Those scripts are **no longer available** — the local pipeline is archived.
-
-If offline OCR is needed again, restore the scripts from the git history or wiki backups at `<WORKSPACE>/...`.
-
-### Legacy Engine Stack (for reference)
-
-| Priority | Engine | Accuracy | Speed | Notes |
-|---|---|---|---|---|
-| 1° | PaddleOCR PP-OCRv6 | Best (CJK) | ~7s CPU | Python 3.12 subprocess |
-| 2° | EasyOCR | Good | ~7s CPU | Python 3.14 |
-| 3° | Tesseract v5+ | Poor (photos) | ~1s | Last resort |
-
-### Limitations
-- Chinese paths break OpenCV → always copy to ASCII path first
-- PaddleOCR overconfidence: reports 1.0 even on wrong digits
-- Python 3.12 subprocess bridge required (PaddlePaddle doesn't support 3.14)
-- Model download ~200MB on first invocation
-
----
+Notes on apparent mismatches — flag them factually, do not fail fields over them:
+- The region code records the holder's **original registration district**, which often differs from the current address.
+- The issuing authority may differ from the address district — cards are routinely applied for away from the registered address.
+- Validity length follows the holder's age band at issue (CN: under 16 → 5 years; 16–25 → 10; 26–45 → 20; 46+ → long-term). A term that doesn't fit the age band is worth one factual note.
 
 ## Multi-Country Support
 
@@ -247,13 +99,13 @@ If offline OCR is needed again, restore the scripts from the git history or wiki
 | Russia 🇷🇺 | Internal Passport (Паспорт РФ) | Фамилия, Имя, Отчество, Дата рождения, Номер | DD.MM.YYYY |
 | Russia 🇷🇺 | International Passport (Загранпаспорт) | Same as internal + MRZ | DD.MM.YYYY |
 
-Full field-level reference in `references/country-profiles.md`.
+Full field-level reference in `references/country-profiles.md`. Label hints and the image request checklist are in `references/extraction-notes.md`.
 
 ### Name Parsing by Country
-- **Chinese**: 200-surname lookup table. Single-char (李王张陈) → ~80%; compound (欧阳司马) → ~20%. Remaining text is given name.
-- **Japanese**: Separate 氏名 and 名前 fields on passport — no splitting needed.
-- **Russian**: Separate Фамилия, Имя, Отчество fields — no splitting needed.
-- **HKID**: English name in SURNAME, Given format (comma-separated) — swap to **given-name surname** order for output (e.g. `Chan, Tai Man` → `Tai Man Chan`)
+- **Chinese**: surname is the first 1–2 characters (single-char surnames are most common; compound ones include 欧阳, 司马). The rest is the given name.
+- **Japanese**: separate 氏名 and 名前 fields on the passport — no splitting needed.
+- **Russian**: separate Фамилия, Имя, Отчество fields — no splitting needed.
+- **HKID**: English name is printed `SURNAME, Given` — keep it in that surname-first order for the output.
 - **MRZ**: ICAO 9303 standard — surname << given names.
 
 ### Date Parsing
@@ -265,131 +117,61 @@ Full field-level reference in `references/country-profiles.md`.
 | DD.MM.YYYY | 15.05.1985 | RU |
 | DD-MM-YYYY | 15-03-1985 | HK |
 
----
+## Card Photo Flattening & JPG Export (<150KB)
 
-## Validation & Warning System
+Use `scripts/flatten_and_export.py`:
 
-| Check | What it catches | Trigger |
-|---|---|---|
-| Confidence threshold | Blurry/unreadable photos | `_ocr_min_confidence` < 0.3 |
-| CN ID checksum (ISO 7064 MOD 11-2) | Wrong ID number digits | Check digit mismatch |
-| DOB ↔ ID cross-check | Inconsistent DOB vs ID digits 7-14 | ID number DOB ≠ extracted DOB |
+```bash
+python3 scripts/flatten_and_export.py --input front.jpg back.jpg --out-dir <out-dir> --names front,back
+```
 
-**Critical finding:** Confidence ≠ accuracy. On blurry photos, PaddleOCR can report confidence 1.0 on completely wrong digits. The validation checks catch errors that confidence misses.
+Per image it: applies EXIF rotation → detects the card outline (Otsu threshold first; on pale cards photographed on pale backgrounds the gray levels overlap and Otsu merges card and background, so the script falls back to GrabCut segmentation with the image border as background — force it with `--strategy grabcut` if a warp comes out wrong) → perspective-warps ("deskews") to the ID-1 card ratio (85.6 × 54 mm) at 1200×757 → saves JPEG, stepping quality down (then size down) until the file is under 150 KB (it targets ≤149,500 bytes, so it passes under either KB reading).
 
----
+Rules:
+- **Corner order is the whole ballgame**: tl = min(x+y), br = max(x+y), tr = min(y−x), bl = max(y−x). Swapping tr/bl still produces a neat-looking image, but transposed and mirrored with unreadable text.
+- **Always read the output images back and verify** the text is upright and legible before presenting them — never present an unverified warp. Both automatic detectors can fail (a pale card's edge can be segmented as background, leaving a skewed or clipped crop); if the warp is wrong, locate the four card corners directly and warp from those.
+- Present the finished JPGs **inline as image attachments** in the reply.
+
+## Headshot Photo Extraction
+
+Use `scripts/extract_headshot.py` on the **flattened** front card (output of the flattening step above):
+
+```bash
+python3 scripts/extract_headshot.py --input id-card-front.jpg --output id-headshot.jpg
+```
+
+How it works: OpenCV DNN face detection (the `models/opencv-face` Caffe model) finds the face, then the printed photo rectangle is derived from the face box using the standard CN ID photo proportions (26 × 32 mm, w/h = 0.8125; face width ≈ 0.571 × photo width; photo top ≈ face top − 0.234 × face height; photo horizontally centred on the face). The crop is upscaled 2× and saved as JPEG.
+
+Rules and pitfalls (learned on real cards, 2026-11-14):
+- **OpenCV 4.x required** — OpenCV 5 removed `cv2.dnn.readNetFromCaffe`, which the face model needs.
+- Rectangle-detection approaches failed on flattened cards, and a naively derived photo box overshoots (catching card guilloche at the top and a strip of the ID-number row at the bottom). The face-anchored derivation in this script is the method that works.
+- **Always read the crop back and verify before presenting**: the photo's own background must show on all four sides, with no card text, digits or guilloche included. If the box is off, adjust from the reported face box rather than re-guessing blind.
+- Present the finished headshot **inline as an image attachment** in the reply.
 
 ## Scripts Reference
 
-### Primary
 | Script | Purpose |
 |---|---|
-| `scripts/ocr_via_siliconflow.py` | **Primary OCR** — SiliconFlow Qwen VL API. Uses base64 image + temperature 0.0 for deterministic ID extraction. |
-| `scripts/send_telegram_code_block.py` | **Telegram delivery** — wraps extracted fields in Markdown code block and sends via Bot API with `parse_mode: Markdown`. Accepts `--text "..."`, `--file /path/to/results.txt`, or stdin. Reads `TELEGRAM_BOT_TOKEN` from `.env`. Use Python, never curl (Chinese char escaping). |
-
-### Legacy (Avatar/Photo Extraction + Old PaddleOCR Pipeline)
-| Script | Purpose |
-|---|---|
-| `scripts/crop_headshot_opencv_dnn.py` | Crop ID headshot with OpenCV face detection |
-| `scripts/crop_id_photo_opencv.py` | Crop ID photo rectangle using OpenCV |
-| `scripts/extract_id_photo_fullface.py` | End-to-end ID photo extraction with MediaPipe |
-| `scripts/extract_id_photo_rect_verified.py` | ID photo rectangle extraction with face verification |
-| `scripts/flatten_id_card.py` | Deskew/flatten ID via card-boundary perspective transform |
-| `scripts/mediapipe_facecheck.py` | Full-face verification via MediaPipe FaceMesh |
-
----
+| `scripts/flatten_and_export.py` | **Photo cleanup** — EXIF-rotate, deskew (perspective warp to ID-1 ratio), crop to the card, export JPG under a size cap (default <150 KB) for inline presentation. Detection: Otsu with GrabCut fallback (`--strategy`). |
+| `scripts/extract_headshot.py` | **Headshot extraction** — DNN face detection on the flattened card, photo rectangle derived from CN ID photo proportions (26 × 32 mm), 2× upscale, JPEG out. Needs OpenCV 4.x. `--model-dir` defaults to this skill's `models/opencv-face`. |
 
 ## Dependencies
 
-### SiliconFlow Path
-- `SILICONFLOW_API_KEY` in `.env`
-- Optional: `pymupdf` for PDF input (`pip install pymupdf`)
-
-### Local Pipeline Path
-| Component | Target | Command |
-|---|---|---|
-| PaddleOCR 3.7.0 + PaddlePaddle 3.2.2 | Python 3.12 (scoop) | `pip install paddleocr paddlepaddle==3.2.2 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/` |
-| EasyOCR | Python 3.14 (venv) | `pip install easyocr` |
-| Tesseract v5+ | System | `scoop install tesseract` + language packs |
-| Pillow, numpy | Python 3.14 | `pip install Pillow numpy` |
-
-Python 3.12 path: `<WORKSPACE>/...`
-
-10. **Use Python requests, never curl, for Chinese character support** — curl shells out to MSYS/Git-Bash and Chinese chars in `--data` break. Python's requests.post(url, json=payload) always works.
-11. **Vision provider ("aa") may be broken** — vision_analyze() relies on the active model provider. When "aa" combo is down (404 model_not_found), fall back to ocr_via_siliconflow.py (SiliconFlow Qwen3-VL) directly. SiliconFlow is the primary OCR path — don't wait for vision_analyze to work.
-
-## Pitfalls
-
-## Pitfalls
-
-The user has corrected several issues. Be aware of all of them to avoid repeating mistakes:
-
-1. **Output format is 7 fields, not 8** (user correction [DOB]1): Removed "Issue date" from the required output. Do not reintroduce it. Exact format is shown at the top of this document.
-2. **Platform rendering differs** (user correction [DOB]1): Hermes Desktop GUI does not render code fences — use plain text literal newlines. Web/Cherry/OpenWebUI render fences correctly. See `references/platform_rendering.md` for the full breakdown.
-3. **Telegram E2EE caveat** (user research [DOB]1): Regular Telegram Cloud Chats are **NOT** end-to-end encrypted — Telegram stores the keys. Secret Chats are E2EE but device-specific and don't sync. If the user wants true E2EE, Signal is the only major messenger that provides it by default. See `references/telegram-privacy-and-e2ee.md`.
-4. **Photo quality is the real bottleneck** — no OCR engine fixes a blurry photo
-5. **Chinese paths break OpenCV** → always copy to ASCII path first
-6. **PaddleOCR overconfidence**: reports 1.0 even on wrong digits
-7. **~7s per image** on CPU per engine for local pipeline
-8. **Model download ~200MB** on first PaddleOCR invocation
-9. **API-attached images are not on disk**: When the user sends images via Open WebUI, Cherry Studio API, or similar API-based clients, the images exist as in-memory data URLs — not as local files. The `ocr_via_siliconflow.py --input` script cannot reach them. Workarounds: (a) ask the user to upload the file directly, (b) use `write_file` to save a local copy if the data URL is available, or (c) call the SiliconFlow API directly with the base64-encoded image from the data URL using the dual-image pattern.
-10. **Use Python requests, never curl, for Chinese character support** — curl shells out to MSYS/Git-Bash and Chinese chars in `--data` break. Python's requests.post(url, json=payload) always works.
-11. **Vision provider config is non-trivial** — the `aa/` model prefix is parsed as a provider name, and config reload requires a full GUI restart (gateway restart is NOT sufficient). See `references/vision-config-pitfalls.md` before touching vision config.
-## Pitfalls
-
-The user has corrected several issues. Be aware of all of them to avoid repeating mistakes:
-|---|---|---|---|
-| Hermes Desktop GUI | ✗ Raw backticks | ✓ HTTP(S) URL only | Plain text, one field per line. For images: `![alt](https://url)`. Never local paths. |
-| Cherry Studio / Open WebUI / Web | ✓ Fenced blocks render | ✓ | Markdown fenced code block. |
-| Telegram (via bridge) | ✗ No formatting | ✗ | Bot API with `parse_mode: "Markdown"`. |
-| WhatsApp | ✗ No formatting | ✗ | Plain text only. |
-
-**Rule**: Default to plain text on Hermes GUI. Default to fenced code block on Web/Cherry/OpenWebUI. For Telegram, auto-send via Bot API with `parse_mode: Markdown`.
-
-## Displaying Images on Hermes Desktop GUI
-
-- `![alt](https://url)` — **Works** ✓ (HTTP(S) URLs only)
-- `![alt](C:\local\path)` — **Does NOT work** ✗
-- `vision_analyze(local_path)` — **Does NOT render** on Desktop GUI ✗
-- **Solution: Upload to GitHub via API → use GitHub blob URL (`github.com/{owner}/{repo}/blob/{branch}/{path}`) in markdown image syntax (raw.githubusercontent.com 404s for private repos). See `github-publish` skill for full conventions.**
-
-### References
-- `references/telegram-auto-send.md` — How to send OCR results to Telegram
-- `references/platform_rendering.md` — Platform-specific rendering notes
-- `references/pii-sanitization.md` — Cross-platform PII scrubbing workflow (legacy version)
-- `references/prompts-chat-pii-workflow.md` — **Platform-specific workflow for sanitizing prompts.chat skills when no delete endpoint exists** (the workflow used this session: scan → fetch via MCP → sanitize in-place → verify → git filter-repo for repos → final scan)
-
----
+- **Extraction**: Muse's own vision — no API keys or external services.
+- **Image scripts**: Python with `pillow`, `numpy`, and OpenCV 4.x (`opencv-python-headless<5`).
+- **Face model**: `models/opencv-face/` (`deploy.prototxt` + `res10_300x300_ssd_iter_140000_fp16.caffemodel`).
 
 ## PII Hygiene
 
 This skill processes identity documents containing PII. Handle with care:
 
-1. **Never hardcode PII** in SKILL.md or any committed reference file
-2. **Use placeholders**: `[Name]`, `[DocNumber]`, `[DOB]`, `[Expiry]`, `[Country]`
-3. **When publishing to public repos** (GitHub, prompts.chat): redact all examples first
-4. **Reference files** should use synthetic or redacted data only
-5. **Test results** should reference `[Name]` not real names
-6. **Env vars** for tokens (`TELEGRAM_BOT_TOKEN`, `SILICONFLOW_API_KEY`, `TELEGRAM_CHAT_ID`) should never be committed — read from `.env` at runtime
-7. **Scan the entire repo** before publishing — PII hides in scripts, configs, test results, not just Markdown
+1. **Never hardcode PII** in SKILL.md or any committed reference file — use placeholders (`[Name]`, `[DocNumber]`, `[DOB]`) and synthetic examples only.
+2. **Scan the entire skill** before publishing anywhere — PII hides in reference files and test notes, not just the main document.
+3. Deliver extracted data in the chat it was requested in; don't copy it into other documents or skills.
 
-**Pre-publish checklist**:
-- [ ] No Chinese/real names in any file
-- [ ] No passport/ID numbers
-- [ ] No real DOBs or expiry dates
-- [ ] No tokens or API keys
-- [ ] No real chat IDs (replace with `[CHAT_ID]`)
-- [ ] `references/pii-sanitization.md` consulted for full workflow
+## Pitfalls
 
-See `references/pii-sanitization.md` for the full PII scrubbing workflow (scan → fix → filter-repo rewrite → verify).
-
----
-
-| Model | Test Document | Verdict |
-|---|---|---|
-| Qwen3-VL-32B-Instruct | HK business letter + synthetic CN ID | ✅ Perfect extraction |
-| DeepSeek-OCR | Same documents | ⚠️ Usable — spaces stripped, Chinese garbled |
-| PaddleOCR-VL-1.5 | Same documents | ❌ Hallucinated, unusable |
-
-See `references/test-results-2026-07-07.md` for full comparison.
-See `references/test-results-2026-07-11.md` for live test with Chinese passport (post-consolidation).
+1. **Output format is 9 fields, exactly as shown at the top of this document** — "Issue date" was removed by user correction and must not be reintroduced; "Address" and "Address (EN)" were added on 2026-11-14.
+2. **Photo quality is the real bottleneck** — no processing fixes a blurry or glare-covered photo. Ask for a better photo rather than guessing fields.
+3. **Verify every derived image visually before presenting it** — flattened warps and headshot crops can be wrong while looking tidy (transposed, clipped, or skewed). Read them back, every time.
+4. **Two-sided documents**: never extract from one side alone — CN ID personal details and issuing authority/validity are on opposite sides.
