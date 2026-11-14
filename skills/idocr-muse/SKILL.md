@@ -1,7 +1,7 @@
 ---
 name: idocr-muse
 description: OCR identity documents (national IDs, passports) from multiple countries and extract structured fields. Muse reads the document images directly — no external OCR service. Also flattens card photos to <150KB JPGs and extracts the printed headshot photo.
-version: 3.0.0
+version: 3.1.0
 author: <AUTHOR>
 ---
 
@@ -147,6 +147,19 @@ Rules and pitfalls (learned on real cards, 2026-11-14):
 - Rectangle-detection approaches failed on flattened cards, and a naively derived photo box overshoots (catching card guilloche at the top and a strip of the ID-number row at the bottom). The face-anchored derivation in this script is the method that works.
 - **Always read the crop back and verify before presenting**: the photo's own background must show on all four sides, with no card text, digits or guilloche included. If the box is off, adjust from the reported face box rather than re-guessing blind.
 - Present the finished headshot **inline as an image attachment** in the reply.
+
+## Social Avatar Generation (on request)
+
+When the user asks for an avatar from the ID photo, generate a Japanese anime-style avatar from the **extracted headshot** (not the full card):
+
+- Use the headshot as the identity reference for image generation, so the avatar keeps the person's recognizable features (hairstyle and hair colour, face shape, top colour).
+- Style: Japanese cartoon / anime, clean and suitable as a social-network profile picture.
+- **Format: 1:1 square.**
+- **Pose: head in three-quarter view, eyes in a side-glance toward the viewer — not looking straight at the camera.**
+- A soft decorative background (e.g. cherry blossoms) is fine.
+- Verify the result visually before presenting it, and present it **inline as an image attachment**.
+
+This is an on-request extra, not part of the standard deliverables in "Default Deliverables" above.
 
 ## Scripts Reference
 
