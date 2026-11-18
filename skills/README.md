@@ -17,6 +17,7 @@ are safe to reuse in any agent.
 | [docren](docren/) | Rename scanned/digital documents via vision into structured filenames, make them searchable (ocrmypdf), sort, sync to OneDrive via rclone, and email the results. |
 | [football-fans-avatar](football-fans-avatar/) | Generate FIFA national football fan 2D cartoon avatars with Ghibli/Miyazaki styling and directional gaze. |
 | [glados-checkin](glados-checkin/) | Local GLaDOS (glados.cloud / railgun.info) daily check-in: earn points, track remaining days, optional auto-exchange and push notifications — no GitHub Actions. |
+| [hermes-ispconfig](hermes-ispconfig/) | Manage ISPConfig servers via the Remote JSON API: sites, DNS, mail, databases, SSL, cron, backups, and one-command site provisioning. |
 | [idocr](idocr/) | Multi-country identity document (national IDs, passports) OCR using vision models and image pre-processing. |
 | [pet-tag-avatar](pet-tag-avatar/) | Generate 1:1 manga baby pet avatars wearing prominent rectangular silver name ID tags. |
 | [picx](picx/) | PicX-style image hosting and management via GitHub API with CDN linking (jsDelivr, Statically). |
