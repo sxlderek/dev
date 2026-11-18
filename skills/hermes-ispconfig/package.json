@@ -1,0 +1,22 @@
+{
+  "name": "hermes-ispconfig",
+  "version": "2026.8.1-hermes.1",
+  "description": "ISPConfig server management bridge (vendored from elvatis/openclaw-ispconfig v2026.8.1, MIT) - sites, mailboxes, databases, DNS, websites",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "author": "Elvatis (upstream), Hermes fork adaptations",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.0"
+  },
+  "overrides": {
+    "test-exclude": "^7.0.1"
+  }
+}
