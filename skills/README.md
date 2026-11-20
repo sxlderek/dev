@@ -29,4 +29,5 @@ are safe to reuse in any agent.
 | [skill-publish](skill-publish/) | Sanitize, generalize, and publish an agent skill to a public repo. |
 | [stripchat-payout](stripchat-payout/) | Extract Stripchat token history into a clean Google Sheet or TSV table. |
 | [whois](whois/) | Domain WHOIS, DNS records (A, AAAA, NS, MX, TXT/SPF/DMARC), SSL certificates, and web screenshots. |
+| [unorouter-opencode](unorouter-opencode/) | Refresh UnoRouter's non-free text model inventory into OpenCode's selectable model configuration. |
 | [yoursafe-transfer](yoursafe-transfer/) | Check Yoursafe balance and prepare SEPA transfers to a saved beneficiary. |
